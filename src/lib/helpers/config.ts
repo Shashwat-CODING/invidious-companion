@@ -10,7 +10,7 @@ export const ConfigSchema = z.object({
         ),
         unix_socket_path: z.string().default(
             Deno.env.get("SERVER_UNIX_SOCKET_PATH") ||
-                "/tmp/invidious-companion.sock",
+            "/tmp/invidious-companion.sock",
         ),
         base_path: z.string()
             .default(Deno.env.get("SERVER_BASE_PATH") || "/companion")
@@ -40,7 +40,7 @@ export const ConfigSchema = z.object({
                 val === undefined
                     ? Deno.env.get("SERVER_SECRET_KEY") || ""
                     : val,
-            z.string().length(16).regex(
+            z.string().min(16).regex(
                 /^[a-zA-Z0-9]+$/,
                 "SERVER_SECRET_KEY contains invalid characters. Only alphanumeric characters (a-z, A-Z, 0-9) are allowed. Please generate a valid key using 'pwgen 16 1' or ensure your key contains only letters and numbers.",
             ),
@@ -75,7 +75,7 @@ export const ConfigSchema = z.object({
             retry: z.object({
                 enabled: z.boolean().default(
                     Deno.env.get("NETWORKING_FETCH_RETRY_ENABLED") === "true" ||
-                        false,
+                    false,
                 ),
                 times: z.number().optional().default(
                     Number(Deno.env.get("NETWORKING_FETCH_RETRY_TIMES")) || 1,
@@ -97,7 +97,7 @@ export const ConfigSchema = z.object({
         videoplayback: z.object({
             ump: z.boolean().default(
                 Deno.env.get("NETWORKING_VIDEOPLAYBACK_UMP") === "true" ||
-                    false,
+                false,
             ),
             video_fetch_chunk_size_mb: z.number().default(
                 Number(
@@ -112,7 +112,7 @@ export const ConfigSchema = z.object({
         youtube_session: z.object({
             po_token_enabled: z.boolean().default(
                 Deno.env.get("JOBS_YOUTUBE_SESSION_PO_TOKEN_ENABLED") ===
-                        "false"
+                    "false"
                     ? false
                     : true,
             ),
