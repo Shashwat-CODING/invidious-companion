@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-# check=error=true
+# check=error=true;skip=SecretsUsedInArgOrEnv
 
 # Default values for versions
 ARG THC_VERSION='0.39.0' \
@@ -13,7 +13,6 @@ ARG DENO_DIR='/deno-dir' \
     PORT='8282'
 
 # sha256 checksums for binaries (not secrets, used for integrity verification)
-# check=skip=SecretsUsedInArgOrEnv
 ARG THC_AMD64_SHA256='cb1797948015da46c222764a99ee30c06a6a9a30f5b87f212a28ea3c6d07610d' \
     THC_ARM64_SHA256='c177033fd474af673bd64788d47e13708844f3946e1eb51cce6a422a23a5e8cc' \
     TINI_AMD64_SHA256='93dcc18adc78c65a028a84799ecf8ad40c936fdfc5f2a57b1acda5a8117fa82c' \
