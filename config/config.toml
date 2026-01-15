@@ -72,6 +72,6 @@
 # # frequency of PO token refresh in cron format
 # frequency = "*/5 * * * *" # env variable: JOBS_YOUTUBE_SESSION_FREQUENCY
  
-# [youtube_session]
-# oauth_enabled = false # env variable: YOUTUBE_SESSION_OAUTH_ENABLED
+[youtube_session]
+oauth_enabled = true # env variable: YOUTUBE_SESSION_OAUTH_ENABLED
 # cookies = "" # env variable: YOUTUBE_SESSION_COOKIES
