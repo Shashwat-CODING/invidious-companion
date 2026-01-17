@@ -29,7 +29,7 @@
 # # you need to change the --allow-write from deno run too
 # directory = "/var/tmp" # env variable: CACHE_DIRECTORY
  
- [networking]
+[networking]
 ## Proxy type supported: https://docs.deno.com/api/deno/~/Deno.Proxy
 proxy = "http://72.10.164.178:31493" # env variable: PROXY
 # # IPv6 rotation settings - allows sending requests with unique IPv6 addresses
@@ -72,6 +72,6 @@ proxy = "http://72.10.164.178:31493" # env variable: PROXY
 # # frequency of PO token refresh in cron format
 # frequency = "*/5 * * * *" # env variable: JOBS_YOUTUBE_SESSION_FREQUENCY
  
-[youtube_session]
-oauth_enabled = true # env variable: YOUTUBE_SESSION_OAUTH_ENABLED
+#[youtube_session]
+# oauth_enabled = true # env variable: YOUTUBE_SESSION_OAUTH_ENABLED
 # cookies = "" # env variable: YOUTUBE_SESSION_COOKIES
