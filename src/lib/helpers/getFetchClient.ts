@@ -1,6 +1,7 @@
 import { retry, type RetryOptions } from "@std/async";
 import type { Config } from "./config.ts";
 import { generateRandomIPv6 } from "./ipv6Rotation.ts";
+import { getCurrentProxy } from "./proxyManager.ts";
 
 type FetchInputParameter = Parameters<typeof fetch>[0];
 type FetchInitParameterWithClient =
@@ -18,7 +19,10 @@ export const getFetchClient = (config: Config): {
         input: FetchInputParameter,
         init?: RequestInit,
     ) => {
-        const proxyAddress = config.networking.proxy;
+        // Use auto-fetched proxy if enabled, otherwise use configured proxy
+        const proxyAddress = config.networking.auto_proxy
+            ? getCurrentProxy()
+            : config.networking.proxy;
         const ipv6Block = config.networking.ipv6_block;
 
         // If proxy or IPv6 rotation is configured, create a custom HTTP client

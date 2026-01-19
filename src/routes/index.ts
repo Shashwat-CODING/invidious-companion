@@ -46,9 +46,27 @@ export const companionRoutes = (
 export const miscRoutes = (
     app: Hono,
     config: Config,
+    regenerateSession?: () => Promise<void>,
 ) => {
     app.route("/healthz", health);
     if (config.server.enable_metrics) {
         app.route("/metrics", metrics);
     }
+
+    app.get("/api/set/proxy/:proxy", async (c) => {
+        let proxy = c.req.param("proxy");
+        if (proxy) {
+            proxy = decodeURIComponent(proxy);
+            config.networking.proxy = proxy;
+            console.log(`[INFO] Proxy updated to: ${proxy}`);
+
+            if (regenerateSession) {
+                console.log("[INFO] Triggering session regeneration...");
+                await regenerateSession();
+            }
+
+            return c.text(`Proxy updated to: ${proxy}`);
+        }
+        return c.text("Invalid proxy", 400);
+    });
 };

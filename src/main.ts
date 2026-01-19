@@ -13,6 +13,22 @@ const config = await parseConfig();
 import { Metrics } from "./lib/helpers/metrics.ts";
 import { PLAYER_ID } from "./constants.ts";
 import { jsInterpreter } from "./lib/helpers/jsInterpreter.ts";
+import {
+    initProxyManager,
+    markProxyFailed,
+    isProxyManagerReady,
+} from "./lib/helpers/proxyManager.ts";
+
+// Initialize auto proxy manager if enabled
+if (config.networking.auto_proxy) {
+    console.log("[INFO] Auto proxy is enabled, initializing proxy manager...");
+    try {
+        await initProxyManager();
+    } catch (err) {
+        console.error("[ERROR] Failed to initialize proxy manager:", err);
+        console.log("[WARN] Continuing without auto proxy...");
+    }
+}
 
 const args = parseArgs(Deno.args);
 
@@ -36,7 +52,7 @@ if (Deno.env.get("GET_FETCH_CLIENT_LOCATION")) {
 const { getFetchClient } = await import(getFetchClientLocation);
 
 declare module "hono" {
-    interface ContextVariableMap extends HonoVariables {}
+    interface ContextVariableMap extends HonoVariables { }
 }
 
 const app = new Hono({
@@ -106,55 +122,41 @@ if (!innertubeClientOauthEnabled) {
         // If PO token is not enabled, resolve immediately
         tokenMinterReadyResolve?.();
     }
+    // Resolve promise for tests
+    tokenMinterReadyResolve?.();
+}
+
+const regenerateSession = async () => {
+    if (innertubeClientJobPoTokenEnabled) {
+        try {
+            ({ innertubeClient, tokenMinter } = await poTokenGenerate(
+                config,
+                metrics,
+            ));
+        } catch (err) {
+            metrics?.potokenGenerationFailure.inc();
+            // Don't rethrow for cron/manual trigger to avoid crashing the server loop
+            console.error("[ERROR] Failed to regenerate session:", err);
+        }
+    } else {
+        innertubeClient = await Innertube.create({
+            enable_session_cache: false,
+            fetch: getFetchClient(config),
+            retrieve_player: innertubeClientFetchPlayer,
+            user_agent: USER_AGENT,
+            cookie: innertubeClientCookies || undefined,
+            player_id: PLAYER_ID,
+        });
+    }
+};
+
+if (!innertubeClientOauthEnabled) {
     Deno.cron(
         "regenerate youtube session",
         config.jobs.youtube_session.frequency,
         { backoffSchedule: [5_000, 15_000, 60_000, 180_000] },
-        async () => {
-            if (innertubeClientJobPoTokenEnabled) {
-                try {
-                    ({ innertubeClient, tokenMinter } = await poTokenGenerate(
-                        config,
-                        metrics,
-                    ));
-                } catch (err) {
-                    metrics?.potokenGenerationFailure.inc();
-                    throw err;
-                }
-            } else {
-                innertubeClient = await Innertube.create({
-                    enable_session_cache: false,
-                    fetch: getFetchClient(config),
-                    retrieve_player: innertubeClientFetchPlayer,
-                    user_agent: USER_AGENT,
-                    cookie: innertubeClientCookies || undefined,
-                    player_id: PLAYER_ID,
-                });
-            }
-        },
+        regenerateSession,
     );
-} else if (innertubeClientOauthEnabled) {
-    // Fired when waiting for the user to authorize the sign in attempt.
-    innertubeClient.session.on("auth-pending", (data) => {
-        console.log(
-            `[INFO] [OAUTH] Go to ${data.verification_url} in your browser and enter code ${data.user_code} to authenticate.`,
-        );
-    });
-    // Fired when authentication is successful.
-    innertubeClient.session.on("auth", () => {
-        console.log("[INFO] [OAUTH] Sign in successful!");
-    });
-    // Fired when the access token expires.
-    innertubeClient.session.on("update-credentials", async () => {
-        console.log("[INFO] [OAUTH] Credentials updated.");
-        await innertubeClient.session.oauth.cacheCredentials();
-    });
-
-    // Attempt to sign in and then cache the credentials
-    await innertubeClient.session.signIn();
-    await innertubeClient.session.oauth.cacheCredentials();
-    // Resolve promise for tests
-    tokenMinterReadyResolve?.();
 }
 
 companionApp.use("*", async (c, next) => {
@@ -170,7 +172,7 @@ app.use("*", async (c, next) => {
     c.set("metrics", metrics);
     await next();
 });
-miscRoutes(app, config);
+miscRoutes(app, config, regenerateSession);
 
 app.route("/", companionApp);
 
