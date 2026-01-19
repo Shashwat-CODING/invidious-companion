@@ -31,7 +31,7 @@
  
 [networking]
 ## Proxy type supported: https://docs.deno.com/api/deno/~/Deno.Proxy
-proxy = "socks5://195.35.113.29:1080" # env variable: PROXY
+proxy = "https://98f9d03bddd9ed195d256b86bdf948be:g4BKRdRnnXN6QRNr@maasdam-1-nl.maxxxcdn.com:30848" # env variable: PROXY
 # # IPv6 rotation settings - allows sending requests with unique IPv6 addresses
 # # This requires IPv6 setup: https://github.com/iv-org/invidious-companion/wiki/How-to-send-IPv6-requests-with-a-new-IPv6-address-for-each-request-on-a-server-with-a-whole-IPv6-range
 # # Randomizes all bits after the block prefix (e.g., /32 randomizes bits 33-128)
