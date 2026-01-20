@@ -102,12 +102,25 @@ if (!innertubeClientOauthEnabled) {
     if (innertubeClientJobPoTokenEnabled) {
         // Initialize tokenMinter in background to not block server startup
         console.log("[INFO] Starting PO token generation in background...");
+
+        // Wrapper function that rotates proxy on failure when auto_proxy is enabled
+        const poTokenGenerateWithProxyRotation = async () => {
+            try {
+                return await poTokenGenerate(config, metrics);
+            } catch (err) {
+                // If auto_proxy is enabled and PO token generation failed, rotate to a new proxy
+                if (config.networking.auto_proxy) {
+                    console.log(
+                        "[INFO] PO token generation failed, rotating to new proxy...",
+                    );
+                    await markProxyFailed();
+                }
+                throw err; // Re-throw to trigger retry
+            }
+        };
+
         retry(
-            poTokenGenerate.bind(
-                poTokenGenerate,
-                config,
-                metrics,
-            ),
+            poTokenGenerateWithProxyRotation,
             { minTimeout: 1_000, maxTimeout: 60_000, multiplier: 5, jitter: 0 },
         ).then((result) => {
             innertubeClient = result.innertubeClient;
@@ -135,6 +148,13 @@ const regenerateSession = async () => {
             ));
         } catch (err) {
             metrics?.potokenGenerationFailure.inc();
+            // If auto_proxy is enabled and PO token generation failed, rotate to a new proxy
+            if (config.networking.auto_proxy) {
+                console.log(
+                    "[INFO] Session regeneration failed, rotating to new proxy...",
+                );
+                await markProxyFailed();
+            }
             // Don't rethrow for cron/manual trigger to avoid crashing the server loop
             console.error("[ERROR] Failed to regenerate session:", err);
         }

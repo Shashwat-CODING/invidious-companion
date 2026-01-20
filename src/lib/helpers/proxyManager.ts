@@ -9,7 +9,7 @@ const API_BASE = "https://antpeak.com";
 const USER_AGENT =
     "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 const APP_VERSION = "3.7.8";
-const YOUTUBE_TEST_URL = "https://www.youtube.com/";
+const YOUTUBE_TEST_URL = "https://www.youtube.com/watch?v=bzbsJGMVHxQ";
 
 // --- Types ---
 interface DeviceInfo {
