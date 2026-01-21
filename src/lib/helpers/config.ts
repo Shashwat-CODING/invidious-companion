@@ -40,7 +40,7 @@ export const ConfigSchema = z.object({
                 val === undefined
                     ? Deno.env.get("SERVER_SECRET_KEY") || ""
                     : val,
-            z.string().min(16),
+            z.string().min(1),
         ).default(undefined),
         verify_requests: z.boolean().default(
             Deno.env.get("SERVER_VERIFY_REQUESTS") === "true" || false,
@@ -62,6 +62,9 @@ export const ConfigSchema = z.object({
     }).strict().default({}),
     networking: z.object({
         proxy: z.string().nullable().default(Deno.env.get("PROXY") || null),
+        auto_proxy: z.boolean().default(
+            Deno.env.get("NETWORKING_AUTO_PROXY") === "true" || false,
+        ),
         ipv6_block: z.string().nullable().default(
             Deno.env.get("NETWORKING_IPV6_BLOCK") || null,
         ),

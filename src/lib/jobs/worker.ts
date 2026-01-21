@@ -182,6 +182,22 @@ async function setup(
         throw new Error("Could not get challenge");
     }
 
+    // Mock HTMLCanvasElement.prototype.getContext to silence "Not implemented" error
+    // and prevent unnecessary noise in logs.
+    if (dom.window.HTMLCanvasElement) {
+        dom.window.HTMLCanvasElement.prototype.getContext = ((
+            _contextId: string,
+            _options?: any,
+        ) => {
+            return new Proxy({}, {
+                get: (_target, _prop) => {
+                    return () => { };
+                },
+            });
+        }) as any;
+        dom.window.HTMLCanvasElement.prototype.toDataURL = () => "";
+    }
+
     const interpreterUrl = challengeResponse.bg_challenge.interpreter_url
         .private_do_not_access_or_else_trusted_resource_url_wrapped_value;
     const bgScriptResponse = await fetchImpl(
@@ -192,13 +208,6 @@ async function setup(
     if (interpreterJavascript) {
         new Function(interpreterJavascript)();
     } else throw new Error("Could not load VM");
-
-    // Botguard currently surfaces a "Not implemented" error here, due to the environment
-    // not having a valid Canvas API in JSDOM. At the time of writing, this doesn't cause
-    // any issues as the Canvas check doesn't appear to be an enforced element of the checks
-    console.log(
-        '[INFO] the "Not implemented: HTMLCanvasElement.prototype.getContext" error is normal. Please do not open a bug report about it.',
-    );
     const botguard = await BG.BotGuardClient.create({
         program: challengeResponse.bg_challenge.program,
         globalName: challengeResponse.bg_challenge.global_name,
