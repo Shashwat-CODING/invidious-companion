@@ -4,8 +4,11 @@ import { encodeRFC5987ValueChars } from "../lib/helpers/encodeRFC5987ValueChars.
 import { decryptQuery } from "../lib/helpers/encryptQuery.ts";
 import { StreamingApi } from "hono/utils/stream";
 
-let getFetchClientLocation = "getFetchClient";
+import { getFetchClient as defaultGetFetchClient } from "../lib/helpers/getFetchClient.ts";
+
+let getFetchClient = defaultGetFetchClient;
 if (Deno.env.get("GET_FETCH_CLIENT_LOCATION")) {
+    let getFetchClientLocation;
     if (Deno.env.has("DENO_COMPILED")) {
         getFetchClientLocation = Deno.mainModule.replace("src/main.ts", "") +
             Deno.env.get("GET_FETCH_CLIENT_LOCATION");
@@ -14,8 +17,9 @@ if (Deno.env.get("GET_FETCH_CLIENT_LOCATION")) {
             "GET_FETCH_CLIENT_LOCATION",
         ) as string;
     }
+    const module = await import(getFetchClientLocation);
+    getFetchClient = module.getFetchClient;
 }
-const { getFetchClient } = await import(getFetchClientLocation);
 
 const videoPlaybackProxy = new Hono();
 
@@ -159,7 +163,7 @@ videoPlaybackProxy.get("/", async (c) => {
         if (postResponse.status !== 200) {
             throw new Error("Non-200 response from google servers");
         }
-        await stream.pipe(postResponse.body);
+        await stream.pipe(postResponse.body!);
     };
 
     const chunkSize =
@@ -203,9 +207,8 @@ videoPlaybackProxy.get("/", async (c) => {
     };
 
     if (title) {
-        headersForResponse["content-disposition"] = `attachment; filename="${
-            encodeURIComponent(title)
-        }"; filename*=UTF-8''${encodeRFC5987ValueChars(title)}`;
+        headersForResponse["content-disposition"] = `attachment; filename="${encodeURIComponent(title)
+            }"; filename*=UTF-8''${encodeRFC5987ValueChars(title)}`;
     }
 
     let responseStatus = headResponse.status;
@@ -216,9 +219,8 @@ videoPlaybackProxy.get("/", async (c) => {
         // "bytes=500-1000" get 500 bytes starting from 500
         if (lastByte) {
             responseStatus = 206;
-            headersForResponse["content-range"] = `bytes ${requestBytes}/${
-                queryParams.get("clen") || "*"
-            }`;
+            headersForResponse["content-range"] = `bytes ${requestBytes}/${queryParams.get("clen") || "*"
+                }`;
         } else {
             // i.e. "bytes=0-", "bytes=600-"
             // full size of content is able to be calculated, so a full Content-Range header can be constructed

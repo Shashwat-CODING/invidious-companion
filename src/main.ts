@@ -38,8 +38,11 @@ if (args._version_date && args._version_commit) {
     );
 }
 
-let getFetchClientLocation = "getFetchClient";
+import { getFetchClient as defaultGetFetchClient } from "./lib/helpers/getFetchClient.ts";
+
+let getFetchClient = defaultGetFetchClient;
 if (Deno.env.get("GET_FETCH_CLIENT_LOCATION")) {
+    let getFetchClientLocation;
     if (Deno.env.has("DENO_COMPILED")) {
         getFetchClientLocation = Deno.mainModule.replace("src/main.ts", "") +
             Deno.env.get("GET_FETCH_CLIENT_LOCATION");
@@ -48,8 +51,9 @@ if (Deno.env.get("GET_FETCH_CLIENT_LOCATION")) {
             "GET_FETCH_CLIENT_LOCATION",
         ) as string;
     }
+    const module = await import(getFetchClientLocation);
+    getFetchClient = module.getFetchClient;
 }
-const { getFetchClient } = await import(getFetchClientLocation);
 
 declare module "hono" {
     interface ContextVariableMap extends HonoVariables { }
